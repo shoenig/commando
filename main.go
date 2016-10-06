@@ -11,6 +11,9 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// example seting up ssh keys
+// ./commando --setupkey --hosts "prod-executor{8..38}"
+
 func main() {
 	user, setupkey, hosts, scripts := arguments()
 
