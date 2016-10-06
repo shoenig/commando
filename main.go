@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -43,7 +44,7 @@ func publickey() (string, error) {
 		return "", errors.Wrapf(err, "could not read %s", keypath)
 	}
 
-	return string(bs), err
+	return strings.TrimSpace(string(bs)), err
 }
 
 func setupKeys(user, pass string, hosts []string) error {
@@ -51,7 +52,8 @@ func setupKeys(user, pass string, hosts []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("public key is:", key)
+
+	fmt.Println("setting public key for hosts:", hosts)
 
 	for _, host := range hosts {
 		if err := setupKey(user, pass, host, key); err != nil {
@@ -63,8 +65,6 @@ func setupKeys(user, pass string, hosts []string) error {
 }
 
 func setupKey(user, pass, host, key string) error {
-	fmt.Println("adding public ssh key to ~/.ssh/authorized_keys on:", host)
-
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
@@ -78,7 +78,45 @@ func setupKey(user, pass, host, key string) error {
 		return errors.Wrap(err, "failed to dial server")
 	}
 
-	fmt.Println("connected!")
+	// 1. ensure .ssh directory exists
+	if err := run(client, host, "mkdir -p ~/.ssh", true); err != nil {
+		return errors.Wrap(err, "mkdir .ssh failed")
+	}
 
-	return client.Close()
+	// 2. append key to authroized_keys (if it is not already present)
+	appendCmd := fmt.Sprintf(`if grep -q "%s" ~/.ssh/authorized_keys; then echo "key already exists"; else echo "%s" >> ~/.ssh/authorized_keys; fi`, key, key)
+	if err := run(client, host, appendCmd, true); err != nil {
+		return errors.Wrap(err, "echo key failed")
+	}
+
+	if err := client.Close(); err != nil {
+		return errors.Wrap(err, "failed to close client")
+	}
+
+	fmt.Println("")
+
+	return nil
+}
+
+func run(client *ssh.Client, host, cmd string, output bool) error {
+	session, err := client.NewSession()
+	if err != nil {
+		return errors.Wrap(err, "failed to create ssh session")
+	}
+
+	fmt.Println(host, "<<<", cmd)
+	bs, err := session.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrap(err, "failed to run command")
+	}
+
+	if output {
+		fmt.Println(host, ">>>", string(bs))
+	}
+	fmt.Println("")
+
+	// normal to get non-nil EOF when cmd is complete
+	_ = session.Close()
+
+	return nil
 }
