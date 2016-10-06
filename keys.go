@@ -54,14 +54,19 @@ func setupKey(user, pass, host, key string) error {
 		return errors.Wrap(err, "failed to dial server")
 	}
 
-	// 1. ensure .ssh directory exists
-	if err := run(client, host, "mkdir -p ~/.ssh", true); err != nil {
+	// 1. ensure ~/.ssh directory exists
+	if err := run(client, host, "mkdir -p ~/.ssh", true, true); err != nil {
 		return errors.Wrap(err, "mkdir .ssh failed")
+	}
+
+	// 2. ensure ~/.ssh/authorized_keys exists
+	if err := run(client, host, "touch ~/.ssh/authorized_keys", true, true); err != nil {
+		return errors.Wrap(err, "touch .ssh/authorized_keys failed")
 	}
 
 	// 2. append key to authroized_keys (if it is not already present)
 	appendCmd := fmt.Sprintf(`if grep -q "%s" ~/.ssh/authorized_keys; then echo "key already exists"; else echo "%s" >> ~/.ssh/authorized_keys; fi`, key, key)
-	if err := run(client, host, appendCmd, true); err != nil {
+	if err := run(client, host, appendCmd, false, true); err != nil {
 		return errors.Wrap(err, "echo key failed")
 	}
 
@@ -74,20 +79,27 @@ func setupKey(user, pass, host, key string) error {
 	return nil
 }
 
-func run(client *ssh.Client, host, cmd string, output bool) error {
+func run(client *ssh.Client, host, cmd string, showInput, showOutput bool) error {
 	session, err := client.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "failed to create ssh session")
 	}
 
-	fmt.Println(host, "<<<", cmd)
+	if showInput {
+		fmt.Println(host, "<<<", cmd)
+	} else {
+		fmt.Println(host, "<<< [suppressed]")
+	}
+
 	bs, err := session.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to run command")
 	}
 
-	if output {
+	if showOutput {
 		fmt.Println(host, ">>>", string(bs))
+	} else {
+		fmt.Println(host, ">>> [suppressed]")
 	}
 	fmt.Println("")
 
