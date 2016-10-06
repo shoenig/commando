@@ -3,7 +3,6 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,6 +22,10 @@ type script struct {
 	content string
 }
 
+func (s script) String() string {
+	return s.name
+}
+
 func loadScripts(dir string) ([]script, error) {
 	scripts := []script{}
 
@@ -35,8 +38,6 @@ func loadScripts(dir string) ([]script, error) {
 		if info.IsDir() {
 			return nil
 		}
-
-		fmt.Println("info.Name:", info.Name())
 
 		if !filenameRe.MatchString(info.Name()) {
 			return errors.Errorf("script name must start with ([0-9]+)-")
