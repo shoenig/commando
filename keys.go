@@ -40,7 +40,7 @@ func setupKeys(user, pass string, hosts []string) error {
 	return nil
 }
 
-func setupKey(user, pass, host, key string) error {
+func makeClient(user, pass, host string) (*ssh.Client, error) {
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{
@@ -49,9 +49,13 @@ func setupKey(user, pass, host, key string) error {
 	}
 
 	address := fmt.Sprintf("%s:22", host)
-	client, err := ssh.Dial("tcp", address, config)
+	return ssh.Dial("tcp", address, config)
+}
+
+func setupKey(user, pass, host, key string) error {
+	client, err := makeClient(user, pass, host)
 	if err != nil {
-		return errors.Wrap(err, "failed to dial server")
+		return errors.Wrap(err, "failed to dial host")
 	}
 
 	// 1. ensure ~/.ssh directory exists
@@ -87,8 +91,6 @@ func run(client *ssh.Client, host, cmd string, showInput, showOutput bool) error
 
 	if showInput {
 		fmt.Println(host, "<<<", cmd)
-	} else {
-		fmt.Println(host, "<<< [suppressed]")
 	}
 
 	bs, err := session.CombinedOutput(cmd)
@@ -98,8 +100,6 @@ func run(client *ssh.Client, host, cmd string, showInput, showOutput bool) error
 
 	if showOutput {
 		fmt.Println(host, ">>>", string(bs))
-	} else {
-		fmt.Println(host, ">>> [suppressed]")
 	}
 	fmt.Println("")
 
