@@ -3,6 +3,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -23,7 +24,8 @@ var filenameRe = regexp.MustCompile(filenameFmt)
 // script names must start with a number and a dash.
 type script struct {
 	name    string
-	content string
+	command string
+	stdin   []string
 }
 
 func (s script) String() string {
@@ -47,16 +49,38 @@ func loadScripts(dir string) ([]script, error) {
 			return errors.Errorf("script name must start with ([0-9]+)-")
 		}
 
-		bs, err := ioutil.ReadFile(path)
+		script, err := readScript(info.Name(), path)
 		if err != nil {
-			return errors.Wrap(err, "failed to read script")
+			return errors.Wrapf(err, "failed to read script file %s", info.Name())
 		}
 
-		scripts = append(scripts, script{name: info.Name(), content: string(bs)})
+		scripts = append(scripts, script)
 		return nil
 	})
 
 	return scripts, err
+}
+
+func readScript(name, path string) (script, error) {
+	bs, err := ioutil.ReadFile(path)
+	if err != nil {
+		return script{}, errors.Wrap(err, "failed to read script")
+	}
+	s := strings.TrimSpace(string(bs))
+	return parseScript(name, s)
+}
+
+func parseScript(name, content string) (script, error) {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 {
+		return script{}, errors.Errorf("no command in script %s", name)
+	}
+	s := script{
+		name:    name,
+		command: lines[0],
+		stdin:   lines[1:],
+	}
+	return s, nil
 }
 
 func runScripts(user, pass string, hosts []string, scripts []script) error {
@@ -77,7 +101,26 @@ func runScripts(user, pass string, hosts []string, scripts []script) error {
 	return nil
 }
 
-const scriptFmt = "#!/bin/bash\n%s"
+func substitute(stdin []string, substitutions map[string]string) []string {
+	replaced := []string{}
+	for _, line := range stdin {
+		for old, new := range substitutions {
+			line = strings.Replace(line, old, new, -1)
+		}
+		replaced = append(replaced, line)
+	}
+	return replaced
+}
+
+func combine(stdin []string) string {
+	var b bytes.Buffer
+	for _, line := range stdin {
+		line = strings.TrimSpace(line)
+		b.WriteString(line)
+		b.WriteString("\n")
+	}
+	return b.String()
+}
 
 func runScript(client *ssh.Client, user, pass, host string, script script) error {
 
@@ -88,7 +131,11 @@ func runScript(client *ssh.Client, user, pass, host string, script script) error
 		return errors.Wrap(err, "asdf")
 	}
 
-	session.Stdin = strings.NewReader(pass + "\n")
+	stdin := combine(substitute(script.stdin, map[string]string{
+		"PASSWORD": pass,
+	}))
+
+	session.Stdin = strings.NewReader(stdin)
 
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,
@@ -100,39 +147,12 @@ func runScript(client *ssh.Client, user, pass, host string, script script) error
 		return errors.Wrap(err, "request pty failed")
 	}
 
-	bs, err := session.CombinedOutput("sudo whoami")
+	bs, err := session.CombinedOutput(script.command)
 	if err != nil {
 		return errors.Wrap(err, "command failed")
 	}
 
 	fmt.Println("output: ", string(bs))
 
-	// if err := session.Start("sudo whoami"); err != nil {
-	// 	return errors.Wrap(err, "sudo whoami failed")
-	// }
-
-	// if err := session.Wait(); err != nil {
-	// 	return errors.Wrap(err, "wait failed")
-	// }
-
-	_ = session.Close()
-
 	return nil
-
-	// // 1. put the script at ~/.commando with permissions 300
-	// text := fmt.Sprintf(scriptFmt, script.content)
-	// mkCmd := fmt.Sprintf(`echo "%s" > ~/.commando; chmod 700 ~/.commando`, text)
-	// if err := run(client, host, mkCmd, false, false); err != nil {
-	// 	return errors.Wrap(err, "failed to create .commando file")
-	// }
-
-	// // 3. execute ~/.command
-	// excCmd := `exec ~/.commando`
-	// if err := run(client, host, excCmd, true, true); err != nil {
-	// 	return errors.Wrap(err, "failed running .commando file")
-	// }
-
-	// // 4. delete ~/.commando
-
-	// return nil
 }
