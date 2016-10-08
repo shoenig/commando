@@ -11,8 +11,6 @@ import (
 
 const expandFmt = `([[:word:]-]+)(\{([\d]+)..([\d]+)\})?([[:word:]\.-]*)`
 
-// const expandFmt = `([[:word:]-]+)(\{([\d]+)..([\d]+)\})?`
-
 var expandRe = regexp.MustCompile(expandFmt)
 
 // hosts takes the raw string input from --hosts and resolves
@@ -35,7 +33,6 @@ func expand(raw string) []string {
 	raw = strings.TrimSpace(raw)
 
 	matches := expandRe.FindAllStringSubmatch(raw, -1)
-	fmt.Println("matches:", matches)
 
 	if !strings.Contains(matches[0][0], "..") {
 		expanded = append(expanded, matches[0][0])

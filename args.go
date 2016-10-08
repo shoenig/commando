@@ -4,52 +4,59 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
+
+	"github.com/pkg/errors"
 )
 
-// returns arguments from
-// --hosts list of hosts to execute scripts against
-// --scripts list of scripts (in order) to execute
-func arguments() (string, bool, []string, []script) {
-	var user string
-	var hostexp string
-	var scriptdir string
-	var setupkey bool
+type args struct {
+	user       string
+	hostexp    string
+	scriptdir  string
+	nopassword bool
+	verbose    bool
+}
 
-	flag.StringVar(&user, "user", os.Getenv("USER"), "ssh username")
-	flag.StringVar(&hostexp, "hosts", "", "the list of hosts")
-	flag.BoolVar(&setupkey, "setupkey", false, "set ssh public key in authorized_keys on remote")
-	flag.StringVar(&scriptdir, "scripts", "", "the directory full of scripts")
+func arguments() args {
+	var args args
+
+	flag.StringVar(&args.user, "user", os.Getenv("USER"), "ssh username")
+	flag.StringVar(&args.hostexp, "hosts", "", "the list of hosts")
+	flag.StringVar(&args.scriptdir, "scripts", "", "the directory full of scripts")
+	flag.BoolVar(&args.nopassword, "no-password", false, "no-password skips password prompt")
+	flag.BoolVar(&args.verbose, "verbose", false, "verbose mode")
 
 	flag.Parse()
 
-	if scriptdir != "" && setupkey {
-		fmt.Fprintln(os.Stderr, "only one of --scripts and --setupkey at a time")
-		os.Exit(1)
+	return args
+}
+
+func validate(args args) error {
+	if args.hostexp == "" {
+		return errors.Errorf("--hosts is required")
 	}
 
-	if scriptdir == "" && !setupkey {
-		fmt.Fprintln(os.Stderr, "one of --scripts or --setupkey is required")
-		os.Exit(1)
+	if args.user == "" {
+		return errors.Errorf("--user or $USER must be set")
 	}
 
-	if hostexp == "" {
-		fmt.Fprintln(os.Stderr, "--hosts is required")
-		os.Exit(1)
+	if args.scriptdir == "" {
+		return errors.Errorf("--scripts is required")
 	}
 
-	hosts := hosts(hostexp)
+	return nil
+}
 
-	if setupkey {
+/*
+	hosts := hosts(args.ostexp)
+
+	if args.setupkey {
 		return user, true, hosts, nil
 	}
 
-	scripts, err := loadScripts(scriptdir)
+	scripts, err := loadScripts(args.scriptdir)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "bad argument: %v", err)
 		os.Exit(1)
 	}
-
-	return user, false, hosts, scripts
-}
+*/

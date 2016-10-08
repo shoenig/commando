@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 
@@ -32,10 +33,10 @@ func (s script) String() string {
 	return s.name
 }
 
-func loadScripts(dir string) ([]script, error) {
+func load(cfg args) ([]script, error) {
 	scripts := []script{}
 
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(cfg.scriptdir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to read scripts")
 		}
@@ -49,7 +50,7 @@ func loadScripts(dir string) ([]script, error) {
 			return errors.Errorf("script name must start with ([0-9]+)-")
 		}
 
-		script, err := readScript(info.Name(), path)
+		script, err := read(info.Name(), path)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read script file %s", info.Name())
 		}
@@ -58,19 +59,23 @@ func loadScripts(dir string) ([]script, error) {
 		return nil
 	})
 
+	if len(scripts) == 0 {
+		return nil, errors.Errorf("no scripts found")
+	}
+
 	return scripts, err
 }
 
-func readScript(name, path string) (script, error) {
+func read(name, path string) (script, error) {
 	bs, err := ioutil.ReadFile(path)
 	if err != nil {
 		return script{}, errors.Wrap(err, "failed to read script")
 	}
 	s := strings.TrimSpace(string(bs))
-	return parseScript(name, s)
+	return parse(name, s)
 }
 
-func parseScript(name, content string) (script, error) {
+func parse(name, content string) (script, error) {
 	lines := strings.Split(content, "\n")
 	if len(lines) == 0 {
 		return script{}, errors.Errorf("no command in script %s", name)
@@ -83,7 +88,7 @@ func parseScript(name, content string) (script, error) {
 	return s, nil
 }
 
-func runScripts(user, pass string, hosts []string, scripts []script) error {
+func run(user, pass string, hosts []string, scripts []script) error {
 	for _, host := range hosts {
 
 		client, err := makeClient(user, pass, host)
@@ -92,7 +97,7 @@ func runScripts(user, pass string, hosts []string, scripts []script) error {
 		}
 
 		for _, script := range scripts {
-			if err := runScript(client, user, pass, host, script); err != nil {
+			if err := execute(client, user, pass, host, script); err != nil {
 				return errors.Wrapf(err, "failed to run %s on %s", script, host)
 			}
 			fmt.Println("")
@@ -122,9 +127,10 @@ func combine(stdin []string) string {
 	return b.String()
 }
 
-func runScript(client *ssh.Client, user, pass, host string, script script) error {
+func execute(client *ssh.Client, user, pass, host string, script script) error {
 
-	fmt.Printf("###### running script %s on %s\n", script, host)
+	fmt.Printf("###### running script %s on %s at %s\n", script, host, time.Now())
+	fmt.Printf("###### command is `%s`\n", script.command)
 
 	session, err := client.NewSession()
 	if err != nil {
@@ -148,11 +154,26 @@ func runScript(client *ssh.Client, user, pass, host string, script script) error
 	}
 
 	bs, err := session.CombinedOutput(script.command)
-	if err != nil {
-		return errors.Wrap(err, "command failed")
+
+	// print the output regardless of err
+	output := strings.TrimSpace(string(bs))
+	if len(output) == 0 {
+		fmt.Println("<no output>")
+	} else {
+		fmt.Println(output)
 	}
 
-	fmt.Println("output: ", string(bs))
+	return err
+}
 
-	return nil
+func makeClient(user, pass, host string) (*ssh.Client, error) {
+	config := &ssh.ClientConfig{
+		User: user,
+		Auth: []ssh.AuthMethod{
+			ssh.Password(pass),
+		},
+	}
+
+	address := fmt.Sprintf("%s:22", host)
+	return ssh.Dial("tcp", address, config)
 }

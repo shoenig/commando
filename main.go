@@ -7,35 +7,55 @@ package main
 import (
 	"fmt"
 	"os"
-
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 // example seting up ssh keys
 // ./commando --setupkey --hosts "prod-executor{8..38}"
 
 func main() {
-	user, setupkey, hosts, scripts := arguments()
+	args := arguments()
+	v := args.verbose
 
-	fmt.Printf("\tgimmie password:  ")
-	bs, err := terminal.ReadPassword(int(os.Stdin.Fd()))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read password: %v\n", err)
+	tracef(v, "cliargs user: '%s'", args.user)
+	tracef(v, "cliargs hosts: '%s'", args.hostexp)
+	tracef(v, "cliargs scripts: '%s'", args.scriptdir)
+	tracef(v, "cliargs nopassword: '%t'", args.nopassword)
+	tracef(v, "cliargs verbose: '%t'", args.verbose)
+
+	if err := validate(args); err != nil {
+		dief("arguments are invalid: %v", err)
 	}
-	fmt.Println("\t...thanks!")
-	password := string(bs)
 
-	if setupkey {
-		if err := setupKeys(user, password, hosts); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to setup ssh keys: %v\n", err)
-			os.Exit(1)
-		}
-	} else {
-		fmt.Println("executing", scripts, "on hosts", hosts)
+	hosts := hosts(args.hostexp)
+	if len(hosts) == 0 {
+		dief("no hosts resolved from --host regex")
+	}
 
-		if err := runScripts(user, password, hosts, scripts); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to run scripts: %v\n", err)
-			os.Exit(1)
-		}
+	scripts, err := load(args)
+	if err != nil {
+		dief("failed to load scripts: %v", err)
+	}
+
+	fmt.Println("⚠ will execute these scripts:", scripts)
+	fmt.Println("⚠ on these hosts:", hosts)
+
+	pswd, err := prompt(args)
+	if err != nil {
+		dief("failed to read password: %v", err)
+	}
+
+	if err := run(args.user, pswd, hosts, scripts); err != nil {
+		dief("failed to run scripts: %v", err)
+	}
+}
+
+func dief(format string, args ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
+}
+
+func tracef(verbose bool, format string, args ...interface{}) {
+	if verbose {
+		fmt.Printf(format+"\n", args...)
 	}
 }
