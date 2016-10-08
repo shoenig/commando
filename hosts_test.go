@@ -32,6 +32,40 @@ func Test_hosts(t *testing.T) {
 				"qa-control13",
 			},
 		},
+		{
+			input: "qa-control1.zombo.com",
+			exp:   []string{"qa-control1.zombo.com"},
+		},
+		{
+			input: "qa-control1.zombo.com,qa-control3.zombo.com, qa-control5.zombo.com",
+			exp: []string{
+				"qa-control1.zombo.com",
+				"qa-control3.zombo.com",
+				"qa-control5.zombo.com",
+			},
+		},
+		{
+			input: "qa-control{3..6}.zombo.com",
+			exp: []string{
+				"qa-control3.zombo.com",
+				"qa-control4.zombo.com",
+				"qa-control5.zombo.com",
+				"qa-control6.zombo.com",
+			},
+		},
+		{
+			input: "qa-control1.zombo.com,qa-control{3..6}.zombo.com,qa-executor{1..3}",
+			exp: []string{
+				"qa-control1.zombo.com",
+				"qa-control3.zombo.com",
+				"qa-control4.zombo.com",
+				"qa-control5.zombo.com",
+				"qa-control6.zombo.com",
+				"qa-executor1",
+				"qa-executor2",
+				"qa-executor3",
+			},
+		},
 	}
 
 	for _, test := range tests {

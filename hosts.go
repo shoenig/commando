@@ -9,7 +9,9 @@ import (
 	"strings"
 )
 
-const expandFmt = `([[:alnum:]-_]+)(\{([\d]+)..([\d]+)\})?`
+const expandFmt = `([[:word:]-]+)(\{([\d]+)..([\d]+)\})?([[:word:]\.-]*)`
+
+// const expandFmt = `([[:word:]-]+)(\{([\d]+)..([\d]+)\})?`
 
 var expandRe = regexp.MustCompile(expandFmt)
 
@@ -33,6 +35,7 @@ func expand(raw string) []string {
 	raw = strings.TrimSpace(raw)
 
 	matches := expandRe.FindAllStringSubmatch(raw, -1)
+	fmt.Println("matches:", matches)
 
 	if !strings.Contains(matches[0][0], "..") {
 		expanded = append(expanded, matches[0][0])
@@ -46,8 +49,12 @@ func expand(raw string) []string {
 		if err != nil {
 			return nil
 		}
+		tail := "" // trailing domain
+		if len(matches[0]) == 6 {
+			tail = matches[0][5]
+		}
 		for n := low; n <= high; n++ {
-			host := fmt.Sprintf("%s%d", root, n)
+			host := fmt.Sprintf("%s%d%s", root, n, tail)
 			expanded = append(expanded, host)
 		}
 	}
