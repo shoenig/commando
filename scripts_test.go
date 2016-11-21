@@ -5,15 +5,15 @@ package main
 import (
 	"testing"
 
-	"indeed/gophers/3rdparty/p/github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/require"
 )
 
-const script1 = `
+const file1 = `
 sudo whoami
 PASSWORD
 `
 
-const script2 = `
+const file2 = `
 
 herp derp
 PASSWORD
@@ -22,34 +22,76 @@ PASSWORD
 
 `
 
+const file3 = `
+echo alpha
+---
+sudo whoami
+PASSWORD
+---
+echo beta
+bar
+PASSWORD
+`
+
 func Test_parseScript(t *testing.T) {
 	tests := []struct {
-		content  string
-		name     string
-		expCmd   string
-		expStdin []string
+		content    string
+		name       string
+		expScripts []script
 	}{
 		{
-			content:  script1,
-			name:     "0-script1",
-			expCmd:   "sudo whoami",
-			expStdin: []string{"PASSWORD"},
+			content: file1,
+			name:    "0-script1",
+			expScripts: []script{
+				{
+					command: "sudo whoami",
+					stdin:   []string{"PASSWORD"},
+				},
+			},
 		},
 		{
-			content:  script2,
-			name:     "1-script2",
-			expCmd:   "herp depr",
-			expStdin: []string{"PASSWORD", "foo", "PASSWORD"},
+			content: file2,
+			name:    "1-script2",
+			expScripts: []script{
+				{
+					command: "herp derp",
+					stdin:   []string{"PASSWORD", "foo", "PASSWORD"},
+				},
+			},
 		},
-	}
-
-	check := func(s script, expCmd string, expStdin []string) {
-		require.Equal(t, expCmd, s.command)
+		{
+			content: file3,
+			name:    "2-script3",
+			expScripts: []script{
+				{
+					command: "echo alpha",
+					stdin:   []string{},
+				},
+				{
+					command: "sudo whoami",
+					stdin:   []string{"PASSWORD"},
+				},
+				{
+					command: "echo beta",
+					stdin:   []string{"bar", "PASSWORD"},
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
-		script, err := parse(test.name, test.content)
+		scriptfile, err := parse(test.name, test.content)
 		require.NoError(t, err)
-		check(script, test.expCmd, test.expStdin)
+		require.Equal(t, test.name, scriptfile.name)
+		require.Equal(t, len(test.expScripts), len(scriptfile.scripts))
+		for i := 0; i < len(test.expScripts); i++ {
+			expScript := test.expScripts[i]
+			script := scriptfile.scripts[i]
+			require.Equal(t, expScript.command, script.command)
+			require.Equal(t, len(expScript.stdin), len(script.stdin))
+			for j := 0; j < len(expScript.stdin); j++ {
+				require.Equal(t, expScript.stdin[j], script.stdin[j])
+			}
+		}
 	}
 }
