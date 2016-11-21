@@ -84,10 +84,13 @@ func parse(name, content string) (scriptfile, error) {
 
 func cleanup(lines []string) []string {
 	cleansed := make([]string, 0, len(lines))
-	for _, line := range lines {
-		clean := strings.TrimSpace(line)
-		if clean != "" {
-			cleansed = append(cleansed, line)
+	for _, dirty := range lines {
+		clean := strings.TrimSpace(dirty)
+		switch {
+		case clean == "":
+		case clean[0] == '#':
+		default:
+			cleansed = append(cleansed, clean)
 		}
 	}
 	return cleansed

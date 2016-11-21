@@ -33,6 +33,29 @@ bar
 PASSWORD
 `
 
+const file4 = `
+# comment1
+echo alpha
+---
+# comment 2
+sudo whoami
+PASSWORD
+#comment3
+#comment4
+PASSWORD
+---
+# comment 0
+# comment 1
+# comment 2
+
+echo beta
+# comment 3
+bar
+PASSWORD
+
+# comment 4
+`
+
 func Test_parseScript(t *testing.T) {
 	tests := []struct {
 		content    string
@@ -70,6 +93,24 @@ func Test_parseScript(t *testing.T) {
 				{
 					command: "sudo whoami",
 					stdin:   []string{"PASSWORD"},
+				},
+				{
+					command: "echo beta",
+					stdin:   []string{"bar", "PASSWORD"},
+				},
+			},
+		},
+		{
+			content: file4,
+			name:    "3-script4",
+			expScripts: []script{
+				{
+					command: "echo alpha",
+					stdin:   []string{},
+				},
+				{
+					command: "sudo whoami",
+					stdin:   []string{"PASSWORD", "PASSWORD"},
 				},
 				{
 					command: "echo beta",
