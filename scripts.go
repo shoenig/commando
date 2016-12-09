@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 )
@@ -136,7 +137,7 @@ func combine(stdin []string) string {
 }
 
 func executeScriptfile(client *ssh.Client, user, pass, host string, sf scriptfile) error {
-	fmt.Printf("###### running scripts of %s on %s", sf, host)
+	color.Magenta(fmt.Sprintf("--- %s", host))
 
 	for _, script := range sf.scripts {
 		if err := executeScript(client, user, pass, host, script); err != nil {
@@ -148,7 +149,7 @@ func executeScriptfile(client *ssh.Client, user, pass, host string, sf scriptfil
 }
 
 func executeScript(client *ssh.Client, user, pass, host string, sc script) error {
-	fmt.Printf("###### executing command `%s`\n", sc.command)
+	color.Yellow("executing command `%s`\n", sc.command)
 
 	session, err := client.NewSession()
 	if err != nil {
@@ -176,9 +177,9 @@ func executeScript(client *ssh.Client, user, pass, host string, sc script) error
 	// print the output regardless of err
 	output := strings.TrimSpace(string(bs))
 	if len(output) == 0 {
-		fmt.Println("<no output>")
+		color.Magenta("<no output>")
 	} else {
-		fmt.Println(output)
+		color.Blue(output)
 	}
 
 	return err

@@ -7,6 +7,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/fatih/color"
 )
 
 // example seting up ssh keys
@@ -36,8 +38,10 @@ func main() {
 		dief("failed to load scripts: %v", err)
 	}
 
-	fmt.Println("⚠ will execute these scripts:", scripts)
-	fmt.Println("⚠ on these hosts:", hosts)
+	color.Magenta("will execute scripts")
+	color.Yellow(fmt.Sprintf("%v", scripts))
+	color.Magenta("on hosts")
+	color.Yellow(fmt.Sprintf("%v", hosts))
 
 	pswd, err := prompt(args)
 	if err != nil {
@@ -56,6 +60,6 @@ func dief(format string, args ...interface{}) {
 
 func tracef(verbose bool, format string, args ...interface{}) {
 	if verbose {
-		fmt.Printf(format+"\n", args...)
+		color.Cyan(format+"\n", args...)
 	}
 }

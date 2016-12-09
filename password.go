@@ -3,9 +3,9 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -17,11 +17,10 @@ func prompt(args args) (string, error) {
 		return "", nil
 	}
 
-	fmt.Printf("  password for '%s' --> ", args.user)
+	color.White("  password for '%s' --> ", args.user)
 	bs, err := terminal.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", errors.Wrap(err, "failed to read password")
 	}
-	fmt.Println("\nok")
 	return string(bs), nil
 }
