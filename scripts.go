@@ -137,7 +137,7 @@ func combine(stdin []string) string {
 }
 
 func executeScriptfile(client *ssh.Client, user, pass, host string, sf scriptfile) error {
-	color.Magenta(fmt.Sprintf("--- %s", host))
+	color.Magenta(fmt.Sprintf("--- %s ---", host))
 
 	for _, script := range sf.scripts {
 		if err := executeScript(client, user, pass, host, script); err != nil {
