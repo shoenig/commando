@@ -115,14 +115,14 @@ func run(user, pass string, hosts []string, files []scriptfile) error {
 	return nil
 }
 
-func runCmd(user, pass string, hosts []string, command string) error {
+func runCmd(user, pass string, hosts []string, command string, pw bool) error {
 	for _, host := range hosts {
 		client, err := makeClient(user, pass, host)
 		if err != nil {
 			return errors.Wrap(err, "failed to dial host")
 		}
 
-		if err := executeCommand(client, user, pass, host, command); err != nil {
+		if err := executeCommand(client, user, pass, host, command, pw); err != nil {
 			return errors.Wrapf(err, "failed to run %s on %s", command, host)
 		}
 		fmt.Println("")
@@ -164,10 +164,13 @@ func executeScriptfile(client *ssh.Client, user, pass, host string, sf scriptfil
 	return nil
 }
 
-func executeCommand(client *ssh.Client, user, pass, host, command string) error {
+func executeCommand(client *ssh.Client, user, pass, host, command string, pw bool) error {
 	color.Magenta(fmt.Sprintf("--- %s ---", host))
 
 	sc := script{command: command}
+	if pw {
+		sc.stdin = []string{"PASSWORD"}
+	}
 
 	return executeScript(client, user, pass, host, sc)
 }

@@ -14,6 +14,7 @@ type args struct {
 	hostexp    string
 	scriptdir  string
 	command    string
+	pw         bool
 	nopassword bool
 	verbose    bool
 }
@@ -25,6 +26,7 @@ func arguments() args {
 	flag.StringVar(&args.hostexp, "hosts", "", "the list of hosts")
 	flag.StringVar(&args.scriptdir, "scripts", "", "the directory full of scripts")
 	flag.StringVar(&args.command, "command", "", "the command to run")
+	flag.BoolVar(&args.pw, "pw", false, "send password on stdin after running --command")
 	flag.BoolVar(&args.nopassword, "no-password", false, "no-password skips password prompt")
 	flag.BoolVar(&args.verbose, "verbose", false, "verbose mode")
 
@@ -48,6 +50,10 @@ func validate(args args) error {
 
 	if args.scriptdir != "" && args.command != "" {
 		return errors.Errorf("only one of --scripts or --command allowed")
+	}
+
+	if args.command == "" && args.pw {
+		return errors.Errorf("--pw only allowed in conjunction with --command")
 	}
 
 	return nil

@@ -18,11 +18,12 @@ func main() {
 	args := arguments()
 	v := args.verbose
 
-	tracef(v, "cliargs user: '%s'", args.user)
-	tracef(v, "cliargs hosts: '%s'", args.hostexp)
-	tracef(v, "cliargs scripts: '%s'", args.scriptdir)
-	tracef(v, "cliargs nopassword: '%t'", args.nopassword)
-	tracef(v, "cliargs verbose: '%t'", args.verbose)
+	tracef(v, "cliargs user: %q", args.user)
+	tracef(v, "cliargs hosts: %q", args.hostexp)
+	tracef(v, "cliargs scripts: %q", args.scriptdir)
+	tracef(v, "cliargs command: %q", args.command)
+	tracef(v, "cliargs nopassword: %q", args.nopassword)
+	tracef(v, "cliargs verbose: %q", args.verbose)
 
 	if err := validate(args); err != nil {
 		dief("arguments are invalid: %v", err)
@@ -63,7 +64,7 @@ func main() {
 			dief("failed to read password: %v", err)
 		}
 
-		if err := runCmd(args.user, pswd, hosts, args.command); err != nil {
+		if err := runCmd(args.user, pswd, hosts, args.command, args.pw); err != nil {
 			dief("failed to run command: %v", err)
 		}
 	}
