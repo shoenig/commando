@@ -13,6 +13,7 @@ type args struct {
 	user       string
 	hostexp    string
 	scriptdir  string
+	command    string
 	nopassword bool
 	verbose    bool
 }
@@ -23,6 +24,7 @@ func arguments() args {
 	flag.StringVar(&args.user, "user", os.Getenv("USER"), "ssh username")
 	flag.StringVar(&args.hostexp, "hosts", "", "the list of hosts")
 	flag.StringVar(&args.scriptdir, "scripts", "", "the directory full of scripts")
+	flag.StringVar(&args.command, "command", "", "the command to run")
 	flag.BoolVar(&args.nopassword, "no-password", false, "no-password skips password prompt")
 	flag.BoolVar(&args.verbose, "verbose", false, "verbose mode")
 
@@ -40,23 +42,13 @@ func validate(args args) error {
 		return errors.Errorf("--user or $USER must be set")
 	}
 
-	if args.scriptdir == "" {
-		return errors.Errorf("--scripts is required")
+	if args.scriptdir == "" && args.command == "" {
+		return errors.Errorf("--scripts or --command is required")
+	}
+
+	if args.scriptdir != "" && args.command != "" {
+		return errors.Errorf("only one of --scripts or --command allowed")
 	}
 
 	return nil
 }
-
-/*
-	hosts := hosts(args.ostexp)
-
-	if args.setupkey {
-		return user, true, hosts, nil
-	}
-
-	scripts, err := loadScripts(args.scriptdir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "bad argument: %v", err)
-		os.Exit(1)
-	}
-*/

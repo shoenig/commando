@@ -115,6 +115,22 @@ func run(user, pass string, hosts []string, files []scriptfile) error {
 	return nil
 }
 
+func runCmd(user, pass string, hosts []string, command string) error {
+	for _, host := range hosts {
+		client, err := makeClient(user, pass, host)
+		if err != nil {
+			return errors.Wrap(err, "failed to dial host")
+		}
+
+		if err := executeCommand(client, user, pass, host, command); err != nil {
+			return errors.Wrapf(err, "failed to run %s on %s", command, host)
+		}
+		fmt.Println("")
+	}
+
+	return nil
+}
+
 func substitute(stdin []string, substitutions map[string]string) []string {
 	replaced := []string{}
 	for _, line := range stdin {
@@ -146,6 +162,14 @@ func executeScriptfile(client *ssh.Client, user, pass, host string, sf scriptfil
 	}
 
 	return nil
+}
+
+func executeCommand(client *ssh.Client, user, pass, host, command string) error {
+	color.Magenta(fmt.Sprintf("--- %s ---", host))
+
+	sc := script{command: command}
+
+	return executeScript(client, user, pass, host, sc)
 }
 
 func executeScript(client *ssh.Client, user, pass, host string, sc script) error {

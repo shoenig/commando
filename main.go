@@ -11,8 +11,8 @@ import (
 	"github.com/fatih/color"
 )
 
-// example seting up ssh keys
-// ./commando --setupkey --hosts "prod-executor{8..38}"
+// typical example of running a basic command
+// commando --command "uname -a" --hosts "tst-mexec{1..6}"
 
 func main() {
 	args := arguments()
@@ -33,23 +33,39 @@ func main() {
 		dief("no hosts resolved from --host regex")
 	}
 
-	scripts, err := load(args)
-	if err != nil {
-		dief("failed to load scripts: %v", err)
-	}
+	if args.command == "" {
+		scripts, err := load(args)
+		if err != nil {
+			dief("failed to load scripts: %v", err)
+		}
 
-	color.Magenta("will execute scripts")
-	color.Yellow(fmt.Sprintf("%v", scripts))
-	color.Magenta("on hosts")
-	color.Yellow(fmt.Sprintf("%v", hosts))
+		color.Magenta("will execute scripts")
+		color.Yellow(fmt.Sprintf("%v", scripts))
+		color.Magenta("on hosts")
+		color.Yellow(fmt.Sprintf("%v", hosts))
 
-	pswd, err := prompt(args)
-	if err != nil {
-		dief("failed to read password: %v", err)
-	}
+		pswd, err := prompt(args)
+		if err != nil {
+			dief("failed to read password: %v", err)
+		}
 
-	if err := run(args.user, pswd, hosts, scripts); err != nil {
-		dief("failed to run scripts: %v", err)
+		if err := run(args.user, pswd, hosts, scripts); err != nil {
+			dief("failed to run scripts: %v", err)
+		}
+	} else {
+		color.Magenta("will execute command")
+		color.Yellow(args.command)
+		color.Magenta("on hosts")
+		color.Yellow(fmt.Sprintf("%v", hosts))
+
+		pswd, err := prompt(args)
+		if err != nil {
+			dief("failed to read password: %v", err)
+		}
+
+		if err := runCmd(args.user, pswd, hosts, args.command); err != nil {
+			dief("failed to run command: %v", err)
+		}
 	}
 }
 
