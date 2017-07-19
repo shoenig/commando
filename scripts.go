@@ -218,6 +218,7 @@ func makeClient(user, pass, host string) (*ssh.Client, error) {
 		Auth: []ssh.AuthMethod{
 			ssh.Password(pass),
 		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
 	address := fmt.Sprintf("%s:22", host)
