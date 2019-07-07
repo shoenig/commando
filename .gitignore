@@ -1,1 +1,4 @@
 commando
+*.out
+*~
+

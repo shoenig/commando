@@ -1,5 +1,3 @@
-// Author hoenig
-
 package main
 
 import (
@@ -121,13 +119,13 @@ func Test_parseScript(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		scriptfile, err := parse(test.name, test.content)
+		scriptFile, err := parse(test.name, test.content)
 		require.NoError(t, err)
-		require.Equal(t, test.name, scriptfile.name)
-		require.Equal(t, len(test.expScripts), len(scriptfile.scripts))
+		require.Equal(t, test.name, scriptFile.name)
+		require.Equal(t, len(test.expScripts), len(scriptFile.scripts))
 		for i := 0; i < len(test.expScripts); i++ {
 			expScript := test.expScripts[i]
-			script := scriptfile.scripts[i]
+			script := scriptFile.scripts[i]
 			require.Equal(t, expScript.command, script.command)
 			require.Equal(t, len(expScript.stdin), len(script.stdin))
 			for j := 0; j < len(expScript.stdin); j++ {
