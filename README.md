@@ -4,7 +4,7 @@ commando
 Run commands in bulk on remote machines.
 
 [![Go Report Card](https://goreportcard.com/badge/go.gophers.dev/cmds/commando)](https://goreportcard.com/report/go.gophers.dev/cmds/commando)
-[![Build Status](https://travis-ci.com/shoenig/regexplus.svg?branch=master)](https://travis-ci.com/shoenig/regexplus)
+[![Build Status](https://travis-ci.com/shoenig/commando.svg?branch=master)](https://travis-ci.com/shoenig/commando)
 [![GoDoc](https://godoc.org/go.gophers.dev/cmds/commando?status.svg)](https://godoc.org/go.gophers.dev/cmds/commando)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/shoenig/regexplus.svg)](OSSMETADATA)
 [![GitHub](https://img.shields.io/github/license/shoenig/regexplus.svg)](LICENSE)
