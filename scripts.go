@@ -76,7 +76,7 @@ func parse(name, content string) (scriptfile, error) {
 
 	for _, part := range parts {
 		if strings.Contains(part, "PASSWORD") {
-			scriptfile.sudo = true
+			scriptFile.sudo = true
 		}
 		lines := cleanup(strings.Split(part, "\n"))
 		if len(lines) == 0 {
