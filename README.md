@@ -19,7 +19,7 @@ in prompts on the remote machine (e.g. using sudo).
 
 The `commando` command can be installed by running
 ```
-$ go get go.gophers.dev/cmds/commando
+$ go install go.gophers.dev/cmds/commando@latest
 ```
 
 ### Example usage
